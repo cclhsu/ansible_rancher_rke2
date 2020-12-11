@@ -1,0 +1,136 @@
+---
+# - name: Add required modules
+#   modprobe:
+#     name: "{{ item.name }}"
+#     state: present
+#   loop:
+#     "{{ _module }}"
+#   tags: common
+
+# - name: Setup required sysctl params
+#   sysctl:
+#     name: "{{ item.key }}"
+#     value: "{{ item.value }}"
+#     sysctl_set: yes
+#     state: present
+#     reload: yes
+#   loop:
+#     "{{ _sysctl }}"
+#   tags: common
+
+- name: Install packages that allow apt to be used over HTTPS
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg2
+    - software-properties-common
+  tags: common
+
+# - name: copy templates
+#   template:
+#     dest: "{{ item.dest }}"
+#     src: "{{ item.src | default('./templates' + item.dest + '.j2') }}"
+#     owner: "{{ item.owner | default('root') }}"
+#     group: "{{ item.group | default('root') }}"
+#     mode: "{{ item.mode | default('0644') }}"
+#   loop:
+#     - { dest: "/etc/apt/sources.list" }
+#   tags: common
+
+# - name: Add signing keys
+#   apt_key:
+#     url: "{{ item.gpg }}"
+#     state: present
+#   loop: "{{ _key }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common
+
+# - name: Add repositoies
+#   apt_repository:
+#     repo: "{{ item.repo }}"
+#     state: present
+#   loop: "{{ _repo }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common
+
+- name: Update all packages
+  apt:
+    name: '*'
+    state: latest
+    update_cache: yes
+  changed_when: false
+  ignore_errors: true
+  tags: common
+
+- name: Install packages
+  apt:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+  loop: "{{ _package }}"
+  register: result
+  until: result is succeeded
+  tags: common
+
+# - name: just force systemd to reread configs
+#   systemd:
+#     daemon_reload: yes
+#   tags: common
+
+# - name: Start and enable services
+#   systemd:
+#     name: "{{ item.name }}"
+#     state: started
+#     enabled: yes
+#     daemon_reload: yes
+#   loop: "{{ _service }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common
+
+# - name: Add /usr/local/bin to sudo secure_path
+#   lineinfile:
+#     line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
+#     regexp: "Defaults(\s)*secure_path(\s)*="
+#     state: present
+#     insertafter: EOF
+#     path: /etc/sudoers
+#     validate: 'visudo -cf %s'
+#   tags: common
+
+# - name: Download script
+#   get_url:
+#     url: "{{ item.url }}"
+#     # checksum: "{{ item.checksum }}"
+#     dest: "{{ item.dest }}"
+#     owner: root
+#     group: root
+#     mode: 0755
+#   loop: "{{ _install_script }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common
+
+# - name: Execute script
+#   shell: "{{ item.dest }}"
+#   become: true
+#   loop: "{{ _install_script }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common
+
+# - name: Remove script
+#   file:
+#     path: "{{ item.dest }}"
+#     state: absent
+#   loop: "{{ _install_script }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common

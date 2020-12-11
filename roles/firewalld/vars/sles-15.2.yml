@@ -1,0 +1,64 @@
+---
+# _module:
+#   - { name: "overlay" }
+#   - { name: "br_netfilter" }
+
+# _sysctl:
+#   - { key: "net.bridge.bridge-nf-call-ip6tables", value: 1 }
+#   - { key: "net.bridge.bridge-nf-call-iptables", value: 1 }
+#   - { key: "net.ipv4.ip_forward", value: 1 }
+#   - { key: "net.ipv6.conf.all.forwarding", value: 1 }
+
+# _key:
+#   - { gpg: "" }
+
+# _repo:
+#   - { name: "", repo: "" }
+
+_package:
+  - { state: "latest", name: "firewalld" }
+  # - { state: "latest", name: "python-firewall" }
+  # - { state: "latest", name: "ipvsadm" }
+  - { state: "latest", name: "iptables" }
+  - { state: "latest", name: "arptables" }
+  - { state: "latest", name: "ebtables" }
+  - { state: "latest", name: "ethtool" }
+
+_service:
+  - {  enabled: "no", state: "present",  name: "firewalld" }
+  # - {  enabled: "no", state: "present",  name: "ipvsadm" }
+
+_k8s_master_ports:
+  - { port: 22, protocol: "tcp" }
+  - { port: 80, protocol: "tcp" }
+  - { port: 443, protocol: "tcp" }
+  - { port: 2379-2380, protocol: "tcp" }
+  - { port: 4194, protocol: "tcp" }
+  - { port: 6443, protocol: "tcp" }
+  - { port: 10248, protocol: "tcp" }
+  - { port: 10249, protocol: "tcp" }
+  - { port: 10250, protocol: "tcp" }
+  - { port: 10251, protocol: "tcp" }
+  - { port: 10252, protocol: "tcp" }
+  - { port: 10255, protocol: "tcp" }
+  - { port: 10256, protocol: "tcp" }
+  - { port: 30000-32767, protocol: "tcp" }
+  - { port: 30000-32767, protocol: "udp" }
+
+_k8s_worker_ports:
+  - { port: 22, protocol: "tcp" }
+  - { port: 80, protocol: "tcp" }
+  - { port: 443, protocol: "tcp" }
+  - { port: 10250, protocol: "tcp" }
+  - { port: 10255, protocol: "tcp" }
+  - { port: 30000-32767, protocol: "tcp" }
+  - { port: 30000-32767, protocol: "udp" }
+
+# _install_script:
+#   - { url: "", checksum: "", dest: ""  }
+
+# _pkill_script:
+#   - { url: "", checksum: "", dest: ""  }
+
+# _uninstall_script:
+#   - { url: "", checksum: "", dest: ""  }

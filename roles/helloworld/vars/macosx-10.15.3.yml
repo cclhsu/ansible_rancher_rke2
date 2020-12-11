@@ -1,0 +1,17 @@
+---
+_package:
+  - { state: "latest", name: "python3" }
+  - { state: "latest", name: "bash" }
+  - { state: "latest", name: "bash-completion" }
+
+# _service:
+#   - { enabled: "yes", state: "present",  name: "" }
+
+# _install_script:
+#   - { url: "", checksum: "", dest: ""  }
+
+# _pkill_script:
+#   - { url: "", checksum: "", dest: ""  }
+
+# _uninstall_script:
+#   - { url: "", checksum: "", dest: ""  }

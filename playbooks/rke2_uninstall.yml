@@ -1,0 +1,8 @@
+---
+- hosts: "{{ hosts | default('remotes') }}"
+  remote_user: mos
+  become: true
+  roles:
+    # - role: roles/bootstrap
+    # - role: roles/common
+    - role: roles/rke2-uninstall

@@ -1,0 +1,113 @@
+[all]
+
+
+# [all:vars]
+# ansible_python_interpreter=/usr/bin/python3
+
+[remotes_mos]
+10.17.1.0
+10.17.2.0
+10.17.3.0
+10.17.4.0
+10.17.5.0
+10.17.6.0
+10.17.7.0
+10.17.8.0
+10.17.9.0
+
+[remotes_mos:vars]
+# ansible_connection=ssh
+ansible_user=mos
+ansible_linux=linux
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+# ansible_python_interpreter=/usr/bin/python3
+# ansible_become=yes
+
+[remotes_env]
+10.17.1.0
+10.17.2.0
+10.17.3.0
+
+[remotes_env:vars]
+# ansible_connection=ssh
+# ansible_user=centos
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+# ansible_python_interpreter=/usr/bin/python3
+# ansible_become=yes
+
+[local]
+0.0.0.0
+
+[loadbalancer]
+10.17.1.0
+
+[centos]
+10.17.2.0
+
+[debian]
+10.17.3.0
+
+[fedora]
+10.17.4.0
+
+[rancher-k3os]
+10.17.5.0
+
+[rancher-os]
+10.17.6.0
+
+[opensuse-leap]
+10.17.7.0
+
+[sles]
+10.17.8.0
+
+[ubuntu]
+10.17.9.0
+
+[centos-masters]
+centos-master ansible_host=10.17.2.0
+
+[centos-masters:vars]
+# ansible_connection=ssh
+ansible_user=centos
+# ansible_linux=linux
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+# ansible_python_interpreter=/usr/bin/python3
+# ansible_become=yes
+
+[centos-workers]
+centos-worker1 ansible_host=10.17.3.0
+centos-worker2 ansible_host=10.17.3.1
+
+[centos-workers:vars]
+# ansible_connection=ssh
+ansible_user=centos
+# ansible_linux=linux
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+# ansible_python_interpreter=/usr/bin/python3
+# ansible_become=yes
+
+[ubuntu-masters]
+ubuntu-master ansible_host=10.17.2.0
+
+[ubuntu-masters:vars]
+# ansible_connection=ssh
+ansible_user=centos
+# ansible_linux=linux
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+# ansible_python_interpreter=/usr/bin/python3
+# ansible_become=yes
+
+[ubuntu-workers]
+ubuntu-worker1 ansible_host=10.17.3.0
+ubuntu-worker2 ansible_host=10.17.3.1
+
+[ubuntu-workers:vars]
+# ansible_connection=ssh
+ansible_user=centos
+# ansible_linux=linux
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+# ansible_python_interpreter=/usr/bin/python3
+# ansible_become=yes
+

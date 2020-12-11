@@ -1,0 +1,34 @@
+---
+- name: include default variables
+  include_vars: "../vars/main.yml"
+  tags: helloworld
+
+- name: include release specific variables
+  include_vars: "{{ lookup('first_found', _params) }}"
+  vars:
+    _params:
+      files:
+        - "{{ ansible_distribution | lower | replace(' ','') }}-{{ ansible_distribution_version | lower }}.yml"
+        - "{{ ansible_distribution | lower | replace(' ','') }}-{{ ansible_distribution_major_version | lower }}.yml"
+        - "{{ ansible_os_family | lower | replace(' ','') }}-{{ ansible_distribution_major_version | lower }}.yml"
+        - "{{ ansible_distribution | lower | replace(' ','') }}.yml"
+        - "{{ ansible_os_family | lower | replace(' ','') }}.yml"
+      paths:
+        - "../vars"
+  ignore_errors: true
+  tags: helloworld
+
+- name: include release specific tasks
+  include_tasks: "{{ lookup('first_found', _params) }}"
+  vars:
+    _params:
+      files:
+        - "{{ ansible_distribution | lower | replace(' ','') }}-{{ ansible_distribution_version | lower }}.yml"
+        - "{{ ansible_distribution | lower | replace(' ','') }}-{{ ansible_distribution_major_version | lower }}.yml"
+        - "{{ ansible_os_family | lower | replace(' ','') }}-{{ ansible_distribution_major_version | lower }}.yml"
+        - "{{ ansible_distribution | lower | replace(' ','') }}.yml"
+        - "{{ ansible_os_family | lower | replace(' ','') }}.yml"
+      paths:
+        - "."
+  ignore_errors: true
+  tags: helloworld

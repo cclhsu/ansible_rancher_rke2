@@ -1,0 +1,47 @@
+---
+- name: brew update
+  homebrew:
+    update_package: yes
+    upgrade_all: yes
+  changed_when: false
+  ignore_errors: true
+  tags: common
+
+- name: brew install
+  homebrew:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+  loop: "{{ _package }}"
+  register: result
+  until: result is succeeded
+  tags: common
+
+# - name: Download script
+#   get_url:
+#     url: "{{ item.url }}"
+#     # checksum: "{{ item.checksum }}"
+#     dest: "{{ item.dest }}"
+#     owner: root
+#     group: root
+#     mode: 0755
+#   loop: "{{ _install_script }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common
+
+# - name: Execute script
+#   shell: "{{ item.dest }}"
+#   become: true
+#   loop: "{{ _install_script }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common
+
+# - name: Remove script
+#   file:
+#     path: "{{ item.dest }}"
+#     state: absent
+#   loop: "{{ _install_script }}"
+#   register: result
+#   until: result is succeeded
+#   tags: common

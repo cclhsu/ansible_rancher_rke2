@@ -1,0 +1,33 @@
+---
+# _module:
+#   - { name: "overlay" }
+#   - { name: "br_netfilter" }
+
+# _sysctl:
+#   - { key: "net.bridge.bridge-nf-call-ip6tables", value: 1 }
+#   - { key: "net.bridge.bridge-nf-call-iptables", value: 1 }
+#   - { key: "net.ipv4.ip_forward", value: 1 }
+#   - { key: "net.ipv6.conf.all.forwarding", value: 1 }
+
+# _key:
+#   - { gpg: "" }
+
+# _repo:
+#   - { name: "", repo: "" }
+
+_package:
+  - { state: "latest", name: "python3" }
+  - { state: "latest", name: "bash" }
+  - { state: "latest", name: "bash-completion" }
+
+# _service:
+#   - { enabled: "yes", state: "present",  name: "" }
+
+# _install_script:
+#   - { url: "", checksum: "", dest: ""  }
+
+# _pkill_script:
+#   - { url: "", checksum: "", dest: ""  }
+
+# _uninstall_script:
+#   - { url: "", checksum: "", dest: ""  }

@@ -1,0 +1,10 @@
+---
+- name: Hello World!
+  hosts: "{{ hosts | default('remotes') }}"
+  vars:
+    who: "world"
+  tasks:
+  - name: Hello World!
+    shell: echo "Hello, {{ who }}!"
+  - name: output a message
+    debug: msg="Hello, {{ who }}!"
