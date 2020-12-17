@@ -115,7 +115,8 @@
   become: true
   loop: "{{ _pkill_script }}"
   register: result
-  until: result is succeeded
+  ignore_errors: true
+  # until: result is succeeded
   tags: rke2-uninstall
 
 - name: Execute uninstall script
@@ -123,5 +124,25 @@
   become: true
   loop: "{{ _uninstall_script }}"
   register: result
-  until: result is succeeded
+  ignore_errors: true
+  # until: result is succeeded
+  tags: rke2-uninstall
+
+- name: Remove file (delete file)
+  file:
+    path: ~{{ ansible_user }}/.kube/config
+    state: absent
+  tags: rke2-uninstall
+
+- name: Recursively remove directory
+  file:
+    path: ~{{ ansible_user }}/.kube/
+    state: absent
+  tags: rke2-uninstall
+
+- name: Remove local file (delete file)
+  file:
+    path: "{{ deployment_host.kube_config }}"
+    state: absent
+  delegate_to: localhost
   tags: rke2-uninstall

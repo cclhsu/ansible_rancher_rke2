@@ -172,3 +172,41 @@
     dest: "{{ server.url_path }}"
   delegate_to: localhost
   tags: rke2-server
+
+- name: Create directory .kube
+  file:
+    path: ~{{ ansible_user }}/.kube
+    state: directory
+    owner: "{{ ansible_user }}"
+    mode: "u=rwx,g=rx,o="
+  tags: rke2-server
+
+- name: Copy config file to user home directory
+  copy:
+    src: /etc/rancher/rke2/rke2.yaml
+    dest: ~{{ ansible_user }}/.kube/config
+    remote_src: yes
+    owner: "{{ ansible_user }}"
+    mode: "u=rw,g=,o="
+  tags: rke2-server
+
+- name: Replace https://localhost:6443 by https://master-ip:6443
+  replace:
+    path: ~{{ ansible_user }}/.kube/config
+    regexp: '127.0.0.1'
+    replace: "{{ ansible_host }}"
+  tags: rke2-server
+
+- name: Fetch config file to user home directory
+  fetch:
+    src: ~{{ ansible_user }}/.kube/config
+    dest: "{{ deployment_host.kube_config }}"
+    flat: yes
+  tags: rke2-server
+
+- name: Remove local file (delete file)
+  file:
+    path: "{{ deployment_host.kube_config }}"
+    state: absent
+  delegate_to: localhost
+  tags: rke2-uninstall

@@ -41,3 +41,6 @@ _install_script:
 server:
   token_path: /tmp/rke2_token
   url_path: /tmp/rke2_url
+
+deployment_host:
+  kube_config: /home/cclhsu/.kube/ansible_rke2_config

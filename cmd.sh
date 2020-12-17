@@ -296,7 +296,7 @@ function set_packages_by_distribution() {
                 PLUGIN_PACKAGES_REPO_URL=
                 PLUGIN_PACKAGES=
                 ;;
-            debian | raspbian | ubuntu)
+            debian | raspios | ubuntu)
                 # https://www.debian.org/distrib/packages
                 # https://packages.ubuntu.com/
                 PACKAGES_KEY_URL=
@@ -385,6 +385,7 @@ function set_packages_by_distribution() {
         PROJECT_PYTHON_BIN=${PROJECT_BIN}
         PROJECT_PYTHON_BIN_RUN_PARAMETERS_RUN_PARAMETERS=
         # https://github.com/${GITHUB_USER}/${GITHUB_PROJECT}/releases
+        DOCKER_REGISTRY=
         DOCKER_USER=${GITHUB_USER}
         DOCKER_PROJECT=${GITHUB_PROJECT}
         TAG=latest # latest | latest-alpine | v0.0.1
@@ -464,7 +465,7 @@ function configure() {
 
         case ${DISTRO} in
             alpine) ;;
-            centos | fedora | rhel | debian | raspbian | ubuntu | opensuse-leap | opensuse-tumbleweed | sles) ;;
+            centos | fedora | rhel | debian | raspios | ubuntu | opensuse-leap | opensuse-tumbleweed | sles) ;;
             cirros) ;;
             macosx) ;;
             microsoft) ;;
@@ -498,7 +499,7 @@ function remove_configurations() {
 
         case ${DISTRO} in
             alpine) ;;
-            centos | fedora | rhel | debian | raspbian | ubuntu | opensuse-leap | opensuse-tumbleweed | sles) ;;
+            centos | fedora | rhel | debian | raspios | ubuntu | opensuse-leap | opensuse-tumbleweed | sles) ;;
             cirros) ;;
             macosx) ;;
             microsoft) ;;
@@ -591,11 +592,10 @@ function ssh_to() {
         cd "${1}" || exit 1
         SSH_USER=$(terraform output username)
         if [ "${SSH_USER}" == "" ]; then
-            select_x_from_array "centos debian fedora mos opensuse-leap rancher sles ubuntu root ec2-user" "SSH_USER" SSH_USER
+            select_x_from_array "${DISTROS} rancher root ec2-user" "SSH_USER" SSH_USER # mos
         fi
-        # IP_INSTANCES=$(terraform output ${2} | sed '1,1d' | sed '$ d' | sed 's/^[ \t]*//' | tr -d '\n' | sed 's/,/ /g' | sed 's/"//g')
         IP_INSTANCES=$(terraform output ${2} | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        select_x_from_array "${IP_INSTANCES}" "IP" IP
+        select_x_from_array "${IP_INSTANCES}" "IP" IPssh_to_node
         echo "${SSH_USER}" "${IP}"
         if [ ${PRINT_CLOUD_INIT_LOG} == true ]; then
             ssh_cmd "${SSH_USER}" "${IP}" "sudo cat /var/log/cloud-init.log"
@@ -612,8 +612,8 @@ function ssh_to() {
 }
 
 function ssh_command() {
-    if [ "$#" != "2" ]; then
-        log_e "Usage: ${FUNCNAME[0]} <DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR> <INSTANCES_TYPE>"
+    if [ "$#" != "1" ] && [ "$#" != "2" ]; then
+        log_e "Usage: ${FUNCNAME[0]} <DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR> [<INSTANCES_TYPE>]"
     else
         log_m "${FUNCNAME[0]} ${*}"
         # cd "${TOP_DIR:?}" || exit 1
@@ -622,39 +622,51 @@ function ssh_command() {
         cd "${1}" || exit 1
         SSH_USER=$(terraform output username)
         if [ "${SSH_USER}" == "" ]; then
-            select_x_from_array "centos debian fedora mos opensuse-leap rancher sles ubuntu root ec2-user" "SSH_USER" SSH_USER "mos"
+            select_x_from_array "${DISTROS} rancher root ec2-user" "SSH_USER" SSH_USER # "mos"
         fi
-        # IP_INSTANCES=$(terraform output ${2} | sed '1,1d' | sed '$ d' | sed 's/^[ \t]*//' | tr -d '\n' | sed 's/,/ /g' | sed 's/"//g')
 
-        IP_ETCDS=$(terraform output ip_etcds | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_STORAGES=$(terraform output ip_storages | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_MASTERS=$(terraform output ip_masters | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_WORKERS=$(terraform output ip_workers | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-
-        IPS="${IP_ETCDS} ${IP_STORAGES} ${IP_MASTERS} ${IP_WORKERS}"
-
-        IP_CENTOSS=$(terraform output ip_centoss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_DEBIANS=$(terraform output ip_debians | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_FEDORAS=$(terraform output ip_fedoras | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_K3OSS=$(terraform output ip_rancher_k3oss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_OPENSUSE_LEAPS=$(terraform output ip_opensuse_leaps | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_RANCHER_OSS=$(terraform output ip_rancher_oss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_SLESS=$(terraform output ip_sless | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-        IP_UBUNTUS=$(terraform output ip_ubuntus | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-
-        IPS="${IP_CENTOSS} ${IP_DEBIANS} ${IP_FEDORAS} ${IP_K3OSS} ${IP_OPENSUSE_LEAPS} ${IP_RANCHER_OSS} ${IP_SLESS} ${IP_UBUNTUS}"
+        if [ "$#" == "2" ]; then
+            IPS=$(terraform output ${2} | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+        else
+            case ${INFRASTRUCTURE_DEPLOYMENT_PROJECT} in
+                terraform_env)
+                    IP_ETCDS=$(terraform output ip_etcds | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_STORAGES=$(terraform output ip_storages | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_MASTERS=$(terraform output ip_masters | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_WORKERS=$(terraform output ip_workers | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IPS="${IP_ETCDS[*]} ${IP_STORAGES[*]} ${IP_MASTERS[*]} ${IP_WORKERS[*]}"
+                    echo ">>> IPS: ${#IPS[*]} ${IPS}"
+                    ;;
+                terraform_mos)
+                    IP_ALPINES=$(terraform output ip_alpines | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_CENTOSS=$(terraform output ip_centoss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_CIRROSS=$(terraform output ip_cirross | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_DEBIANS=$(terraform output ip_debians | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_FEDORAS=$(terraform output ip_fedoras | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_OPENSUSE_LEAPS=$(terraform output ip_opensuse_leaps | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_RANCHER_K3OSS=$(terraform output ip_rancher_k3oss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_RANCHER_OSS=$(terraform output ip_rancher_oss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_RASPIOS=$(terraform output ip_raspioss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_SLESS=$(terraform output ip_sless | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_UBUNTUS=$(terraform output ip_ubuntus | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IPS="${IP_ALPINES} ${IP_CENTOSS[*]} ${IP_CIRROSS[*]} ${IP_DEBIANS[*]} ${IP_FEDORAS[*]} ${IP_OPENSUSE_LEAPS[*]} ${IP_RANCHER_K3OSS[*]} ${IP_RANCHER_OSS[*]} ${IP_RASPIOSS[*]} ${IP_SLESS[*]} ${IP_UBUNTUS[*]}"
+                    echo ">>> IPS: ${#IPS[*]} ${IPS}"
+                    ;;
+                *) ;;
+            esac
+        fi
 
         echo "${SSH_USER}" "${IPS}"
-        # local COMMANDS='uname -s; uname -m; echo; cat ${ETC}/*-release | uniq -u; echo; hostnamectl'
+        # local COMMANDS='uname -s; uname -m; echo; cat /etc/*-release | uniq -u; echo; hostnamectl'
         # local COMMANDS='uname -s | tr A-Z a-z;'
         # local COMMANDS='uname -m | sed s/x86_64/amd64/;'
-        # local COMMANDS='cat ${ETC}/*-release | uniq -u | grep ^ID= | cut -d = -f 2 | sed s/\"//g;'
+        # local COMMANDS='cat /etc/*-release | uniq -u | grep ^ID= | cut -d = -f 2 | sed s/\"//g;'
         # local COMMANDS='command -v {apk,apt-get,brew,dnf,emerge,pacman,yum,zypper,xbps-install} 2>/dev/null;'
         # local COMMANDS='command -v {apk,dpkg,pkgbuild,rpm} 2>/dev/null;'
         # local COMMANDS='command -v {curl,wget} 2>/dev/null;'
         # local COMMANDS='command -v {tar,unzip} 2>/dev/null;'
-        # local COMMANDS='OS=$(uname -s | tr A-Z a-z);ARCH=$(uname -m | sed s/x86_64/amd64/);DISTRO=$(cat ${ETC}/*-release | uniq -u | grep ^ID= | cut -d = -f 2 | sed s/\"//g);PACKAGE_MANAGER=$(basename $(command -v {apk,apt-get,brew,dnf,emerge,pacman,yum,zypper,xbps-install} 2>/dev/null));PACKAGE_SYSTEM=$(basename $(command -v {apk,dpkg,pkgbuild,rpm} 2>/dev/null));echo "${OS} ${ARCH} ${DISTRO} ${PACKAGE_MANAGER} ${PACKAGE_SYSTEM}"'
-        local COMMANDS='. ${ETC}/os-release && echo "${ID} ${VERSION_ID} ${VERSION}"'
+        # local COMMANDS='OS=$(uname -s | tr A-Z a-z);ARCH=$(uname -m | sed s/x86_64/amd64/);DISTRO=$(cat /etc/*-release | uniq -u | grep ^ID= | cut -d = -f 2 | sed s/\"//g);PACKAGE_MANAGER=$(basename $(command -v {apk,apt-get,brew,dnf,emerge,pacman,yum,zypper,xbps-install} 2>/dev/null));PACKAGE_SYSTEM=$(basename $(command -v {apk,dpkg,pkgbuild,rpm} 2>/dev/null));echo "${OS} ${ARCH} ${DISTRO} ${PACKAGE_MANAGER} ${PACKAGE_SYSTEM}"'
+        local COMMANDS='. /etc/os-release && echo "${ID} ${VERSION_ID} ${VERSION}"'
         for IP in ${IPS[*]}; do
             # echo -e "\n>>> ${IP}...\n"
             ssh_cmd "${SSH_USER}" "${IP}" "${COMMANDS}"
@@ -681,7 +693,8 @@ if [ "${ACTION}" == "" ]; then
         ansible_distribution_version ansible_distribution_major_version ansible_update_packages \
         playbook_helloworld playbook_hellorole \
         is_packages_installed \
-        ssh_to_node  ssh_to_centos ssh_to_debian ssh_to_fedora ssh_to_opensuse_leap ssh_to_sles ssh_to_ubuntu"
+        ssh_to ssh_to_command \
+        ssh_to_alpine ssh_to_centos ssh_to_cirros ssh_to_debian ssh_to_fedora ssh_to_opensuse_leap ssh_to_opensuse_tumbleweed ssh_to_rancher_k3os ssh_to_rancher_os ssh_to_raspios ssh_to_sles ssh_to_ubuntu"
 
     select_x_from_array "${MAIN_OPTIONS}" "Action" ACTION # "a"
 fi
@@ -705,9 +718,26 @@ if [ "${LOCATION}" == "remote" ]; then
         install_infrastructure_requirements | uninstall_infrastructure_requirements | deploy | undeploy | status | ssh_to_node)
             case ${INFRASTRUCTURE_DEPLOYMENT_PROJECT} in
                 terraform_env)
+                    IP_ETCDS=$(terraform output ip_etcds | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_STORAGES=$(terraform output ip_storages | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
                     IP_MASTERS=$(terraform output ip_masters | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
                     IP_WORKERS=$(terraform output ip_workers | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
-                    IPS="${IP_MASTERS[*]} ${IP_WORKERS[*]}"
+                    IPS="${IP_ETCDS[*]} ${IP_STORAGES[*]} ${IP_MASTERS[*]} ${IP_WORKERS[*]}"
+                    echo ">>> IPS: ${#IPS[*]} ${IPS}"
+                    ;;
+                terraform_mos)
+                    IP_ALPINES=$(terraform output ip_alpines | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_CENTOSS=$(terraform output ip_centoss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_CIRROSS=$(terraform output ip_cirross | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_DEBIANS=$(terraform output ip_debians | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_FEDORAS=$(terraform output ip_fedoras | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_OPENSUSE_LEAPS=$(terraform output ip_opensuse_leaps | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_RANCHER_K3OSS=$(terraform output ip_rancher_k3oss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_RANCHER_OSS=$(terraform output ip_rancher_oss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_RASPIOS=$(terraform output ip_raspioss | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_SLESS=$(terraform output ip_sless | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IP_UBUNTUS=$(terraform output ip_ubuntus | cut -d "=" -f 2 | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | sed ':a;N;$!ba;s/\n/ /g' | tr -d '{' | tr -d '}' | sed 's/^[ \t]*//' | sed 's/[ \t]*$//' | tr -d '"')
+                    IPS="${IP_ALPINES} ${IP_CENTOSS[*]} ${IP_CIRROSS[*]} ${IP_DEBIANS[*]} ${IP_FEDORAS[*]} ${IP_OPENSUSE_LEAPS[*]} ${IP_RANCHER_K3OSS[*]} ${IP_RANCHER_OSS[*]} ${IP_RASPIOSS[*]} ${IP_SLESS[*]} ${IP_UBUNTUS[*]}"
                     echo ">>> IPS: ${#IPS[*]} ${IPS}"
                     ;;
                 *) ;;
@@ -943,10 +973,10 @@ case ${ACTION} in
         ;;
 
     ssh_to)
-        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_instances"
+        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" # "ip_instances"
         ;;
     ssh_command)
-        ssh_command "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_instances"
+        ssh_command "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" # "ip_instances"
         ;;
 
     ssh_to_lb)
@@ -970,8 +1000,14 @@ case ${ACTION} in
         # ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "workers_public_ip"
         ;;
 
+    ssh_to_alpine)
+        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_alpines"
+        ;;
     ssh_to_centos)
         ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_centoss"
+        ;;
+    ssh_to_cirros)
+        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_cirross"
         ;;
     ssh_to_debian)
         ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_debians"
@@ -979,14 +1015,20 @@ case ${ACTION} in
     ssh_to_fedora)
         ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_fedoras"
         ;;
-    ssh_to_k3os)
-        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_rancher_k3oss"
-        ;;
     ssh_to_opensuse_leap)
         ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_opensuse_leaps"
         ;;
+    ssh_to_opensuse_tumbleweed)
+        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_opensuse_tumbleweeds"
+        ;;
+    ssh_to_rancher_k3os)
+        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_rancher_k3oss"
+        ;;
     ssh_to_rancher_os)
         ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_rancher_oss"
+        ;;
+    ssh_to_raspios)
+        ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_raspioss"
         ;;
     ssh_to_sles)
         ssh_to "${DEPLOYMENT_PLATFORM_DISTRO_TOP_DIR}" "ip_sless"

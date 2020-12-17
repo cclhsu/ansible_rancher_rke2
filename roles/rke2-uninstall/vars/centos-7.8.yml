@@ -37,3 +37,6 @@ _pkill_script:
 
 _uninstall_script:
   - { url: "", checksum: "", dest: "/usr/bin/rke2-uninstall.sh"  }
+
+deployment_host:
+  kube_config: /home/cclhsu/.kube/ansible_rke2_config

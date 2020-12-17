@@ -51,7 +51,8 @@
   become: true
   loop: "{{ _pkill_script }}"
   register: result
-  until: result is succeeded
+  ignore_errors: true
+  # until: result is succeeded
   tags: rke2-uninstall
 
 - name: Execute uninstall script
@@ -59,5 +60,6 @@
   become: true
   loop: "{{ _uninstall_script }}"
   register: result
-  until: result is succeeded
+  ignore_errors: true
+  # until: result is succeeded
   tags: rke2-uninstall
